@@ -1,0 +1,33 @@
+version: "2.4"
+
+x-templates:
+    php: &php
+        build: .docker/php/
+        working_dir: /app
+        user: ${UID:?UID is not set}
+        volumes:
+            - ./:/app/:rw,delegated
+            - ./.docker/composer:/.composer
+        networks: []
+
+services:
+    php:
+        <<: *php
+        networks: [default]
+
+    composer:
+        <<: *php
+        entrypoint: /usr/bin/composer
+        networks: [default]
+
+    phpunit:
+        <<: *php
+        entrypoint: phpdbg -qrr vendor/bin/phpunit
+
+    phpcs:
+        <<: *php
+        entrypoint: vendor/bin/phpcs
+
+    phpcbf:
+        <<: *php
+        entrypoint: vendor/bin/phpcbf
