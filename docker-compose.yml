@@ -31,3 +31,11 @@ services:
     phpcbf:
         <<: *php
         entrypoint: vendor/bin/phpcbf
+
+    phpstan:
+        <<: *php
+        entrypoint: vendor/bin/phpstan
+
+    phan:
+        <<: *php
+        entrypoint: vendor/bin/phan

@@ -8,14 +8,19 @@ use th\Option\NoneError;
 
 /**
  * @template T
+ * @implements \IteratorAggregate<T>
  */
 final class Option implements \IteratorAggregate
 {
     /** @var T */
     private mixed $value;
 
+    /** @var Option<T> */
     private static Option $none;
 
+    /**
+     * @param T $value
+     */
     private function __construct($value)
     {
         $this->value = $value;
@@ -24,7 +29,8 @@ final class Option implements \IteratorAggregate
     /**
      * Create an empty Option
      *
-     * @return Option<T>
+     * @template U
+     * @return Option<U>
      */
     public static function none(): Option
     {
@@ -39,9 +45,9 @@ final class Option implements \IteratorAggregate
     /**
      * Create an option with a value
      *
-     * @template T
-     * @param T $value
-     * @return Option<T>
+     * @template U
+     * @param U $value
+     * @return Option<U>
      */
     public static function some(mixed $value): Option
     {
@@ -146,7 +152,7 @@ final class Option implements \IteratorAggregate
     /**
      * Returns the contained value or compute it from the given closure
      *
-     * @param callable $f
+     * @param callable(): T $f
      * @return T
      */
     public function unwrapOrElse(callable $f): mixed
@@ -159,7 +165,7 @@ final class Option implements \IteratorAggregate
      *
      * @template U
      *
-     * @param callable $f
+     * @param callable(T): U $f
      * @return Option<U>
      */
     public function map(callable $f): Option
@@ -172,7 +178,7 @@ final class Option implements \IteratorAggregate
      *
      * @template U
      *
-     * @param callable $f
+     * @param callable(T): U $f
      * @param U $value
      * @return U
      */
@@ -186,8 +192,8 @@ final class Option implements \IteratorAggregate
      *
      * @template U
      *
-     * @param callable $f
-     * @param callable $default
+     * @param callable(T): U $f
+     * @param callable(): U $default
      * @return U
      */
     public function mapOrElse(callable $f, callable $default): mixed
@@ -195,6 +201,9 @@ final class Option implements \IteratorAggregate
         return $this->isSome() ? call_user_func($f, $this->value) : call_user_func($default);
     }
 
+    /**
+     * @return \Generator<T>
+     */
     public function getIterator(): \Generator
     {
         if ($this->isSome()) {
@@ -205,8 +214,9 @@ final class Option implements \IteratorAggregate
     /**
      * Returns None if the option is None, otherwise returns option b.
      *
-     * @param Option<T> $b
-     * @return Option<T>
+     * @template U
+     * @param Option<U> $b
+     * @return Option<U>
      */
     public function and(Option $b): Option
     {
@@ -216,8 +226,9 @@ final class Option implements \IteratorAggregate
     /**
      * Returns None if the option is None, otherwise calls f with the wrapped value and returns the result
      *
-     * @param callable $f
-     * @return Option<T>
+     * @template U
+     * @param callable(T): Option<U> $f
+     * @return Option<U>
      */
     public function andThen(callable $f): Option
     {
@@ -238,7 +249,7 @@ final class Option implements \IteratorAggregate
     /**
      * Returns the option if it contains a value, otherwise calls f and returns the result.
      *
-     * @param callable $f
+     * @param callable(): Option<T> $f
      * @return Option<T>
      */
     public function orElse(callable $f): Option
@@ -271,7 +282,7 @@ final class Option implements \IteratorAggregate
      * * Some(t) if predicate returns true (where t is the wrapped value), and
      * * None if predicate returns false.
      *
-     * @param callable $p
+     * @param callable(T): bool $p
      * @return Option<T>
      */
     public function filter(callable $p): Option
@@ -282,11 +293,13 @@ final class Option implements \IteratorAggregate
     /**
      * Converts from Option<Option<T>> to Option<T>
      *
-     * @return Option<T>
+     * @template U
+     * @template T of Option<U>
+     * @return Option<U>
      */
     public function flatten(): Option
     {
-        return $this->unwrapOr(Option::none());
+        return $this->isSome() ? $this->value : Option::none();
     }
 
     /**
@@ -294,6 +307,8 @@ final class Option implements \IteratorAggregate
      *
      * If self is Some(s) and other is Some(o), this method returns Some([s, o])). Otherwise, None is returned
      *
+     * @template U
+     * @template V of array{T,U}
      * @param Option<U> $b
      * @return Option<V>
      */
@@ -307,8 +322,10 @@ final class Option implements \IteratorAggregate
      *
      * If self is Some(s) and other is Some(o), this method returns Some(f(s, o))). Otherwise, None is returned
      *
+     * @template U
+     * @template V of array{T,U}
      * @param Option<U> $b
-     * @param callable $f
+     * @param callable(T, U): V $f
      * @return Option<V>
      */
     public function zipWith(Option $b, callable $f): Option
@@ -332,7 +349,7 @@ final class Option implements \IteratorAggregate
      * Transforms the Option<T> into a Result<T,E>, mapping Some(v) to Ok(v) and None to Err(error()).
      *
      * @template E
-     * @param callable $error
+     * @param callable(): E $error
      * @return Result<T,E>
      */
     public function okOrElse(callable $error): Result
@@ -346,9 +363,10 @@ final class Option implements \IteratorAggregate
     /**
      * Transposes an Option of a Result into a Result of an Option.
      *
-     * @template T2
+     * @template U
      * @template E
-     * @return Result<T2,E>
+     * @template T of Result<U,E>
+     * @return Result<Option<U>,E>
      */
     public function transpose(): Result
     {

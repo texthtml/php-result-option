@@ -12,24 +12,21 @@ use WeakMap;
 /**
  * @template T
  * @template E
+ * @implements \IteratorAggregate<T>
  */
 final class Result implements \IteratorAggregate
 {
-    /** @var T|E */
+    /** @var T */
     private mixed $value;
 
-    private bool $ok;
+    /** @var E */
+    private mixed $error;
 
+    /** @var WeakMap<Result<mixed,mixed>,bool> */
     private static WeakMap $toBeUsed;
 
-    /**
-     * @param T|E $value
-     */
-    private function __construct(mixed $value, bool $ok)
+    private function __construct()
     {
-        $this->value = $value;
-        $this->ok = $ok;
-
         if (!isset(self::$toBeUsed)) {
             self::$toBeUsed = new WeakMap();
         }
@@ -45,25 +42,33 @@ final class Result implements \IteratorAggregate
     }
 
     /**
-     * @template T
-     * @template E
-     * @param T $value
-     * return Result<T,E>
+     * @template U
+     * @template F
+     * @param U $value
+     * @return Result<U,F>
      */
     public static function ok(mixed $value): Result
     {
-        return new Result($value, true);
+        $result = new Result();
+
+        $result->value = $value;
+
+        return $result;
     }
 
     /**
-     * @template T
-     * @template E
-     * @param E $error
-     * return Result<T,E>
+     * @template U
+     * @template F
+     * @param F $error
+     * @return Result<U,F>
      */
     public static function error(mixed $error): Result
     {
-        return new Result($error, false);
+        $result = new Result();
+
+        $result->error = $error ?? false;
+
+        return $result;
     }
 
     /**
@@ -73,7 +78,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        return $this->ok;
+        return !isset($this->error);
     }
 
     /**
@@ -83,7 +88,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        return !$this->ok;
+        return isset($this->error);
     }
 
     /**
@@ -95,7 +100,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        return $this->ok && $this->value == $value;
+        return !isset($this->error) && $this->value == $value;
     }
 
     /**
@@ -107,7 +112,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        return $this->ok && $this->value === $value;
+        return !isset($this->error) && $this->value === $value;
     }
 
     /**
@@ -119,7 +124,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        return !$this->ok && $this->value == $error;
+        return isset($this->error) && $this->error == $error;
     }
 
     /**
@@ -131,7 +136,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        return !$this->ok && $this->value === $error;
+        return isset($this->error) && $this->error === $error;
     }
 
     /**
@@ -145,7 +150,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        if (!$this->ok) {
+        if (isset($this->error)) {
             return $this;
         }
 
@@ -164,7 +169,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        if (!$this->ok) {
+        if (isset($this->error)) {
             return $default;
         }
 
@@ -184,7 +189,10 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        return call_user_func($this->ok ? $f : $fallback, $this->value);
+        return call_user_func(
+            !isset($this->error) ? $f : $fallback,
+            !isset($this->error) ? $this->value : $this->error,
+        );
     }
 
     /**
@@ -198,11 +206,11 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        if ($this->ok) {
+        if (!isset($this->error)) {
             return $this;
         }
 
-        return Result::error(call_user_func($f, $this->value));
+        return Result::error(call_user_func($f, $this->error));
     }
 
     /**
@@ -216,7 +224,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        if ($this->ok) {
+        if (!isset($this->error)) {
             return $res;
         }
 
@@ -234,7 +242,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        if ($this->ok) {
+        if (!isset($this->error)) {
             return call_user_func($op, $this->value);
         }
 
@@ -252,7 +260,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        if (!$this->ok) {
+        if (isset($this->error)) {
             return $res;
         }
 
@@ -270,8 +278,8 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        if (!$this->ok) {
-            return call_user_func($op, $this->value);
+        if (isset($this->error)) {
+            return call_user_func($op, $this->error);
         }
 
         return $this;
@@ -287,11 +295,11 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        if ($this->ok) {
+        if (!isset($this->error)) {
             return $this->value;
         }
 
-        throw new ResultError($errorMessage, 0, $this->value instanceof Throwable ? $this->value : null);
+        throw new ResultError($errorMessage, 0, $this->error instanceof Throwable ? $this->error : null);
     }
 
     /**
@@ -304,8 +312,8 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        if (!$this->ok) {
-            return $this->value;
+        if (isset($this->error)) {
+            return $this->error;
         }
 
         throw new ResultError($errorMessage);
@@ -345,7 +353,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        if ($this->ok) {
+        if (!isset($this->error)) {
             return $this->value;
         }
 
@@ -362,28 +370,37 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        if ($this->ok) {
+        if (!isset($this->error)) {
             return $this->value;
         }
 
-        return call_user_func($f, $this->value);
+        return call_user_func($f, $this->error);
     }
 
     /**
      * Converts from Result<Result<T,E>,E> to Result<T,E>
      *
      * @template T2
+     * @template T of Result<T2,E>
      * @return Result<T2,E>
      */
     public function flatten(): Result
     {
         self::$toBeUsed[$this] = false;
 
-        return $this->unwrapOr($this);
+        self::$toBeUsed[$this] = false;
+
+        if (!isset($this->error)) {
+            return $this->value;
+        }
+
+        return $this;
     }
 
     /**
      * Transposes a Result of an Option into an Option of a Result.
+     *
+     * @return Option<T>
      */
     public function transpose(): Option
     {
@@ -400,6 +417,7 @@ final class Result implements \IteratorAggregate
 
     /**
      * Converts from Result<T,E> to Option<T>, and discarding the error, if any.
+     *
      * @return Option<T>
      */
     public function okValue(): Option
@@ -414,6 +432,7 @@ final class Result implements \IteratorAggregate
 
     /**
      * Converts from Result<T,E> to Option<E>, and discarding the Ok value, if any.
+     *
      * @return Option<T>
      */
     public function errorValue(): Option
@@ -426,11 +445,14 @@ final class Result implements \IteratorAggregate
         );
     }
 
+    /**
+     * @return \Generator<T>
+     */
     public function getIterator(): \Generator
     {
         self::$toBeUsed[$this] = false;
 
-        if ($this->ok) {
+        if (!isset($this->error)) {
             yield $this->value;
         }
     }
