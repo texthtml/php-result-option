@@ -42,6 +42,8 @@ final class Result implements \IteratorAggregate
     }
 
     /**
+     * Create an Ok result.
+
      * @template U
      * @template F
      * @param U $value
@@ -57,6 +59,8 @@ final class Result implements \IteratorAggregate
     }
 
     /**
+     * Create an error result.
+     *
      * @template U
      * @template F
      * @param F $error

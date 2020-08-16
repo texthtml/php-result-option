@@ -1,6 +1,6 @@
 {
-    "name": "texthtml/option",
-    "description": "The Option type",
+    "name": "texthtml/result-option",
+    "description": "Result and Option type for your functions returned values.",
     "type": "library",
     "license": "MIT",
     "authors": [
