@@ -76,6 +76,21 @@ final class Result implements \IteratorAggregate
     }
 
     /**
+     * Create an Ok result with the result of the function or an error result if throws an exception
+     *
+     * @param callable(): T $f
+     * @return Result<T,\Throwable>
+     */
+    public static function try(callable $f): Result
+    {
+        try {
+            return self::ok($f());
+        } catch (\Throwable $th) {
+            return self::error($th);
+        }
+    }
+
+    /**
      * Returns true if the result is Ok.
      */
     public function isOk(): bool
@@ -147,7 +162,7 @@ final class Result implements \IteratorAggregate
      * Maps a Result<T,E> to Result<U,E> by applying a function to a contained Ok value, leaving an Err value untouched.
      *
      * @template U
-     * @param callable $f
+     * @param callable(T): U $f
      * @return Result<U,E>
      */
     public function map(callable $f): Result
@@ -165,7 +180,7 @@ final class Result implements \IteratorAggregate
      * Applies a function to the contained value (if Ok), or returns the provided default (if Err).
      *
      * @template U
-     * @param callable $f
+     * @param callable(T): U $f
      * @param U $default
      * @return U
      */
@@ -185,8 +200,8 @@ final class Result implements \IteratorAggregate
      * or a fallback function to a contained Err value.
      *
      * @template U
-     * @param callable $f
-     * @param callable $fallback
+     * @param callable(T): U $f
+     * @param callable(E): U $fallback
      * @return U
      */
     public function mapOrElse(callable $f, callable $fallback): mixed
@@ -203,7 +218,7 @@ final class Result implements \IteratorAggregate
      * Maps a Result<T,E> to Result<T,F> by applying a function to a contained Err value, leaving an Ok value untouched.
      *
      * @template F
-     * @param callable $f
+     * @param callable(E): F $f
      * @return Result<T,F>
      */
     public function mapError(callable $f): Result
@@ -239,7 +254,7 @@ final class Result implements \IteratorAggregate
      * Calls op if the result is Ok, otherwise returns the Err value of self.
      *
      * @template U
-     * @param callable $op
+     * @param callable(T): Result<U,E> $op
      * @return Result<U,E>
      */
     public function andThen(callable $op): Result
@@ -251,6 +266,34 @@ final class Result implements \IteratorAggregate
         }
 
         return $this;
+    }
+
+    /**
+     * Calls op if the result is Ok and returns its Ok(result) or an error result if throws an exception,
+     * otherwise returns the Err value of self.
+     *
+     * @template U
+     * @template F
+     * @param callable(T): U $op
+     * @return Result<U,F>
+     */
+    public function andTry(callable $op): Result
+    {
+        return $this->andThen(static fn ($value) => Result::try(static fn () => $op($value)));
+    }
+
+    /**
+     * Calls op if the result is an error and returns its Ok(result) or an error result if throws an exception,
+     * otherwise returns the Ok value of self.
+     *
+     * @template U
+     * @template F
+     * @param callable(T): U $op
+     * @return Result<U,F>
+     */
+    public function orTry(callable $op): Result
+    {
+        return $this->orElse(static fn ($error) => Result::try(static fn () => $op($error)));
     }
 
     /**
@@ -274,9 +317,9 @@ final class Result implements \IteratorAggregate
     /**
      * Calls op if the result is an error, otherwise returns the Ok value of self.
      *
-     * @template U
-     * @param callable $op
-     * @return Result<U,E>
+     * @template F
+     * @param callable(E): F $op
+     * @return Result<T,F>
      */
     public function orElse(callable $op): Result
     {
@@ -332,7 +375,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        return $this->expect("");
+        return $this->expect("result is not ok");
     }
 
     /**
@@ -344,7 +387,7 @@ final class Result implements \IteratorAggregate
     {
         self::$toBeUsed[$this] = false;
 
-        return $this->expectError("");
+        return $this->expectError("result is not an error");
     }
 
     /**
@@ -367,7 +410,7 @@ final class Result implements \IteratorAggregate
     /**
      * Returns the contained Ok value or computes it from a closure.
      *
-     * @param callable $f
+     * @param callable(E): T $f
      * @return T
      */
     public function unwrapOrElse(callable $f): mixed

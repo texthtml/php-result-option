@@ -244,7 +244,7 @@ final class ResultTest extends TestCase
 
         $this->assertSame($value, Result::ok($value)->unwrap());
 
-        $this->expectExceptionObject(new ResultError());
+        $this->expectExceptionObject(new ResultError("result is not ok"));
 
         Result::error($value)->unwrap();
     }
@@ -272,7 +272,7 @@ final class ResultTest extends TestCase
 
         $this->assertSame($value, Result::error($value)->unwrapError());
 
-        $this->expectExceptionObject(new ResultError());
+        $this->expectExceptionObject(new ResultError("result is not an error"));
 
         Result::ok($value)->unwrapError();
     }
@@ -353,5 +353,40 @@ final class ResultTest extends TestCase
         } catch (UnusedResultError $error) {
             $this->assertStringContainsString(__FILE__ . "(" . (__LINE__ - 2) . ")", $error->getTraceAsString());
         }
+    }
+
+    /**
+     * @covers \th\Result::try
+     */
+    public function testTry()
+    {
+        $this->assertEquals(Result::ok(1), Result::try(fn () => 1));
+
+        $ex = new \Exception();
+        $this->assertEquals(Result::error($ex), Result::try(fn () => throw $ex));
+    }
+
+    /**
+     * @covers \th\Result::andTry
+     */
+    public function testAndTry()
+    {
+        $ex = new \Exception();
+
+        $this->assertEquals(Result::ok(2), Result::ok(1)->andTry(fn ($i) => $i * 2));
+        $this->assertEquals(Result::error($ex), Result::ok(1)->andTry(fn () => throw $ex));
+        $this->assertEquals(Result::error(3), Result::error(3)->andTry($this->forbidden()));
+    }
+
+    /**
+     * @covers \th\Result::orTry
+     */
+    public function testOrTry()
+    {
+        $ex = new \Exception();
+
+        $this->assertEquals(Result::ok(1), Result::ok(1)->orTry($this->forbidden()));
+        $this->assertEquals(Result::ok(2), Result::error(1)->orTry(fn ($i) => $i * 2));
+        $this->assertEquals(Result::error($ex), Result::error(3)->orTry(fn () => throw $ex));
     }
 }
