@@ -28,7 +28,9 @@ final class Result implements \IteratorAggregate
     private function __construct()
     {
         if (!isset(self::$toBeUsed)) {
+            // @codeCoverageIgnoreStart
             self::$toBeUsed = new WeakMap();
+            // @codeCoverageIgnoreEnd
         }
 
         self::$toBeUsed[$this] = true;
@@ -70,7 +72,7 @@ final class Result implements \IteratorAggregate
     {
         $result = new Result();
 
-        $result->error = $error ?? false;
+        $result->error = $error;
 
         return $result;
     }
@@ -95,9 +97,13 @@ final class Result implements \IteratorAggregate
      */
     public function isOk(): bool
     {
+        static $valueProperty;
+        $valueProperty ??= new \ReflectionProperty(self::class, "value");
+        $valueProperty->setAccessible(true);
+
         self::$toBeUsed[$this] = false;
 
-        return !isset($this->error);
+        return $valueProperty->isInitialized($this);
     }
 
     /**
@@ -105,9 +111,7 @@ final class Result implements \IteratorAggregate
      */
     public function isError(): bool
     {
-        self::$toBeUsed[$this] = false;
-
-        return isset($this->error);
+        return !$this->isOk();
     }
 
     /**
@@ -117,9 +121,7 @@ final class Result implements \IteratorAggregate
      */
     public function contains(mixed $value): bool
     {
-        self::$toBeUsed[$this] = false;
-
-        return !isset($this->error) && $this->value == $value;
+        return $this->isOk() && $this->value == $value;
     }
 
     /**
@@ -129,9 +131,7 @@ final class Result implements \IteratorAggregate
      */
     public function containsSame(mixed $value): bool
     {
-        self::$toBeUsed[$this] = false;
-
-        return !isset($this->error) && $this->value === $value;
+        return $this->isOk() && $this->value === $value;
     }
 
     /**
@@ -141,9 +141,7 @@ final class Result implements \IteratorAggregate
      */
     public function containsError(mixed $error): bool
     {
-        self::$toBeUsed[$this] = false;
-
-        return isset($this->error) && $this->error == $error;
+        return !$this->isOk() && $this->error == $error;
     }
 
     /**
@@ -153,9 +151,7 @@ final class Result implements \IteratorAggregate
      */
     public function containsSameError(mixed $error): bool
     {
-        self::$toBeUsed[$this] = false;
-
-        return isset($this->error) && $this->error === $error;
+        return !$this->isOk() && $this->error === $error;
     }
 
     /**
@@ -167,9 +163,7 @@ final class Result implements \IteratorAggregate
      */
     public function map(callable $f): Result
     {
-        self::$toBeUsed[$this] = false;
-
-        if (isset($this->error)) {
+        if (!$this->isOk()) {
             return $this;
         }
 
@@ -186,9 +180,7 @@ final class Result implements \IteratorAggregate
      */
     public function mapOr(callable $f, mixed $default): mixed
     {
-        self::$toBeUsed[$this] = false;
-
-        if (isset($this->error)) {
+        if (!$this->isOk()) {
             return $default;
         }
 
@@ -206,12 +198,9 @@ final class Result implements \IteratorAggregate
      */
     public function mapOrElse(callable $f, callable $fallback): mixed
     {
-        self::$toBeUsed[$this] = false;
-
-        return call_user_func(
-            !isset($this->error) ? $f : $fallback,
-            !isset($this->error) ? $this->value : $this->error,
-        );
+        return $this->isOk()
+            ? call_user_func($f, $this->value)
+            : call_user_func($fallback, $this->error);
     }
 
     /**
@@ -223,9 +212,7 @@ final class Result implements \IteratorAggregate
      */
     public function mapError(callable $f): Result
     {
-        self::$toBeUsed[$this] = false;
-
-        if (!isset($this->error)) {
+        if ($this->isOk()) {
             return $this;
         }
 
@@ -241,9 +228,7 @@ final class Result implements \IteratorAggregate
      */
     public function and(Result $res): Result
     {
-        self::$toBeUsed[$this] = false;
-
-        if (!isset($this->error)) {
+        if ($this->isOk()) {
             return $res;
         }
 
@@ -259,9 +244,7 @@ final class Result implements \IteratorAggregate
      */
     public function andThen(callable $op): Result
     {
-        self::$toBeUsed[$this] = false;
-
-        if (!isset($this->error)) {
+        if ($this->isOk()) {
             return call_user_func($op, $this->value);
         }
 
@@ -305,9 +288,7 @@ final class Result implements \IteratorAggregate
      */
     public function or(Result $res): Result
     {
-        self::$toBeUsed[$this] = false;
-
-        if (isset($this->error)) {
+        if (!$this->isOk()) {
             return $res;
         }
 
@@ -323,9 +304,7 @@ final class Result implements \IteratorAggregate
      */
     public function orElse(callable $op): Result
     {
-        self::$toBeUsed[$this] = false;
-
-        if (isset($this->error)) {
+        if (!$this->isOk()) {
             return call_user_func($op, $this->error);
         }
 
@@ -340,9 +319,7 @@ final class Result implements \IteratorAggregate
      */
     public function expect(string $errorMessage): mixed
     {
-        self::$toBeUsed[$this] = false;
-
-        if (!isset($this->error)) {
+        if ($this->isOk()) {
             return $this->value;
         }
 
@@ -357,9 +334,7 @@ final class Result implements \IteratorAggregate
      */
     public function expectError(string $errorMessage): mixed
     {
-        self::$toBeUsed[$this] = false;
-
-        if (isset($this->error)) {
+        if (!$this->isOk()) {
             return $this->error;
         }
 
@@ -373,8 +348,6 @@ final class Result implements \IteratorAggregate
      */
     public function unwrap(): mixed
     {
-        self::$toBeUsed[$this] = false;
-
         return $this->expect("result is not ok");
     }
 
@@ -385,8 +358,6 @@ final class Result implements \IteratorAggregate
      */
     public function unwrapError(): mixed
     {
-        self::$toBeUsed[$this] = false;
-
         return $this->expectError("result is not an error");
     }
 
@@ -398,9 +369,7 @@ final class Result implements \IteratorAggregate
      */
     public function unwrapOr(mixed $default): mixed
     {
-        self::$toBeUsed[$this] = false;
-
-        if (!isset($this->error)) {
+        if ($this->isOk()) {
             return $this->value;
         }
 
@@ -415,9 +384,7 @@ final class Result implements \IteratorAggregate
      */
     public function unwrapOrElse(callable $f): mixed
     {
-        self::$toBeUsed[$this] = false;
-
-        if (!isset($this->error)) {
+        if ($this->isOk()) {
             return $this->value;
         }
 
@@ -433,11 +400,7 @@ final class Result implements \IteratorAggregate
      */
     public function flatten(): Result
     {
-        self::$toBeUsed[$this] = false;
-
-        self::$toBeUsed[$this] = false;
-
-        if (!isset($this->error)) {
+        if ($this->isOk()) {
             return $this->value;
         }
 
@@ -451,8 +414,6 @@ final class Result implements \IteratorAggregate
      */
     public function transpose(): Option
     {
-        self::$toBeUsed[$this] = false;
-
         return $this->mapOrElse(
             static fn (Option $option) => $option->mapOrElse(
                 static fn ($value) => Option::some(Result::ok($value)),
@@ -469,8 +430,6 @@ final class Result implements \IteratorAggregate
      */
     public function okValue(): Option
     {
-        self::$toBeUsed[$this] = false;
-
         return $this->mapOrElse(
             static fn ($value) => Option::some($value),
             static fn () => Option::none(),
@@ -484,8 +443,6 @@ final class Result implements \IteratorAggregate
      */
     public function errorValue(): Option
     {
-        self::$toBeUsed[$this] = false;
-
         return $this->mapOrElse(
             static fn () => Option::none(),
             static fn ($value) => Option::some($value),
@@ -497,10 +454,13 @@ final class Result implements \IteratorAggregate
      */
     public function getIterator(): \Generator
     {
-        self::$toBeUsed[$this] = false;
-
-        if (!isset($this->error)) {
+        if ($this->isOk()) {
             yield $this->value;
         }
+    }
+
+    public function __clone()
+    {
+        self::$toBeUsed[$this] = true;
     }
 }

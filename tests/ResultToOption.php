@@ -9,8 +9,8 @@ use th\Option;
 use th\Result;
 
 /**
- * @covers \th\Result
- * @covers \th\Option
+ * @uses \th\Result
+ * @uses \th\Option
  */
 final class ResultToOption extends TestCase
 {

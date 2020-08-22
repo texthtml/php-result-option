@@ -12,12 +12,17 @@ use th\Result\ResultError;
 use th\Result\UnusedResultError;
 
 /**
- * @covers \th\Result
+ * @uses \th\Result
  */
 final class ResultTest extends TestCase
 {
     use UseResultAsserts;
 
+    /**
+     * @covers \th\Result::__construct
+     * @covers \th\Result::ok
+     * @covers \th\Result::isOk
+     */
     public function testAnOkResultCanBeCreated()
     {
         $result = Result::ok(null);
@@ -26,6 +31,11 @@ final class ResultTest extends TestCase
         $this->assertFalse($result->isError());
     }
 
+    /**
+     * @covers \th\Result::__construct
+     * @covers \th\Result::error
+     * @covers \th\Result::isError
+     */
     public function testAnErrorResultCanBeCreated()
     {
         $result = Result::error(null);
@@ -34,14 +44,19 @@ final class ResultTest extends TestCase
         $this->assertTrue($result->isError());
     }
 
+    /**
+     * @covers \th\Result::__construct
+     */
     public function testComparaison()
     {
         $this->assertEquals(Result::ok(null), Result::ok(null));
+        $this->assertEquals(Result::ok(null), Result::ok(false));
         $this->assertEquals(Result::ok(1), Result::ok(1));
 
         $this->assertNotEquals(Result::ok(1), Result::ok(2));
 
         $this->assertEquals(Result::error(null), Result::error(null));
+        $this->assertEquals(Result::error(null), Result::error(false));
         $this->assertEquals(Result::error(1), Result::error(1));
 
         $this->assertNotEquals(Result::error(1), Result::error(2));
@@ -50,6 +65,9 @@ final class ResultTest extends TestCase
         $this->assertNotEquals(Result::ok(1), Result::error(1));
     }
 
+    /**
+     * @covers \th\Result::__construct
+     */
     public function testResultWithSameValueOrErrorAreNotTheSame()
     {
         $this->assertNotSame(Result::error(1), Result::error(1));
@@ -133,7 +151,7 @@ final class ResultTest extends TestCase
     /**
      * @covers \th\Result::mapError
      */
-    public function testmapError()
+    public function testMapError()
     {
         $this->assertEquals(Result::error(2), Result::error(1)->mapError(fn ($i) => $i * 2, $this->forbidden()));
 
@@ -324,6 +342,7 @@ final class ResultTest extends TestCase
     }
 
     /**
+     * @covers \th\Result::__destruct
      * @doesNotPerformAssertions
      */
     public function testResultCanBeDroppedAfterUse()
@@ -332,6 +351,7 @@ final class ResultTest extends TestCase
     }
 
     /**
+     * @covers \th\Result::__destruct
      * @covers \th\Result\UnusedResultError
      */
     public function testAnExceptionIsThrownIfTheResultIsNotUsed()
@@ -339,6 +359,22 @@ final class ResultTest extends TestCase
         $this->expectExceptionObject(new UnusedResultError("Result was dropped without being used"));
 
         Result::ok(1);
+    }
+
+    /**
+     * @covers \th\Result::__destruct
+     * @covers \th\Result::__clone
+     * @covers \th\Result\UnusedResultError
+     */
+    public function testAnExceptionIsThrownIfAClonedResultIsNotUsed()
+    {
+        $this->expectExceptionObject(new UnusedResultError("Result was dropped without being used"));
+
+        $r = Result::ok(1);
+
+        $r->isOk();
+
+        $r2 = clone $r;
     }
 
     /**

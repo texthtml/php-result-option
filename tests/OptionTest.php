@@ -11,10 +11,15 @@ use th\Option;
 use th\Option\NoneError;
 
 /**
- * @covers \th\Option
+ * @uses \th\Option
  */
 final class OptionTest extends TestCase
 {
+    /**
+     * @covers \th\Option::__construct
+     * @covers \th\Option::none
+     * @covers \th\Option::isNone
+     */
     public function testANoneOptionCanBeCreated()
     {
         $none = Option::none();
@@ -23,6 +28,11 @@ final class OptionTest extends TestCase
         $this->assertFalse($none->isSome());
     }
 
+    /**
+     * @covers \th\Option::__construct
+     * @covers \th\Option::some
+     * @covers \th\Option::isSome
+     */
     public function testASomeOptionCanBeCreated()
     {
         $some = Option::some(null);
@@ -31,6 +41,9 @@ final class OptionTest extends TestCase
         $this->assertFalse($some->isNone());
     }
 
+    /**
+     * @covers \th\Option::__construct
+     */
     public function testComparaison()
     {
         $this->assertEquals(Option::some(null), Option::some(null));
@@ -40,6 +53,9 @@ final class OptionTest extends TestCase
         $this->assertNotEquals(Option::some(null), Option::none());
     }
 
+    /**
+     * @covers \th\Option::__construct
+     */
     public function testNestedComparaison()
     {
         $this->assertEquals(Option::some(Option::some(1)), Option::some(Option::some(1)));
@@ -48,22 +64,34 @@ final class OptionTest extends TestCase
         $this->assertNotEquals(Option::some(1), Option::some(Option::some(1)));
     }
 
+    /**
+     * @covers \th\Option::__construct
+     */
     public function testOptionWithTheSameValueAreNotTheSameOne()
     {
         $this->assertNotSame(Option::some(null), Option::some(null));
     }
 
+    /**
+     * @covers \th\Option::__construct
+     */
     public function testAllNoneValueAreTheSameOne()
     {
         $this->assertSame(Option::none(), Option::none());
     }
 
+    /**
+     * @covers \th\Option::__construct
+     */
     public function testSomeDifferentThanNone()
     {
         $this->assertNotSame(Option::none(), Option::some(null));
         $this->assertNotEquals(Option::none(), Option::some(null));
     }
 
+    /**
+     * @covers \th\Option::__construct
+     */
     public function testSomeOptionWithSameValuesArNotTheSameOne()
     {
         $this->assertNotSame(Option::some(null), Option::some(null));
@@ -81,7 +109,7 @@ final class OptionTest extends TestCase
     }
 
     /**
-     * @covers \th\Option::contains
+     * @covers \th\Option::containsSame
      */
     public function testContainsSame()
     {

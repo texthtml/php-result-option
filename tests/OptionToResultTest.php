@@ -6,24 +6,28 @@ namespace Tests;
 
 use PHPUnit\Framework\TestCase;
 use Exception;
+use th\Bridge\PHPUnit\ResultAsserts;
 use th\Option;
 use th\Result;
 
 /**
- * @covers \th\Option
- * @covers \th\Result
+ * @uses \th\Option
+ * @uses \th\Result
+ * @uses \th\Bridge\PHPUnit\ResultAsserts
+ * @uses \th\Bridge\PHPUnit\Constraint\IsError
+ * @uses \th\Bridge\PHPUnit\Constraint\IsOk
  */
 final class OptionToResultTest extends TestCase
 {
-    use UseResultAsserts;
+    use ResultAsserts;
 
     /**
      * @covers \th\Option::okOr
      */
     public function testOkOr()
     {
-        $this->assertEquals(Result::ok(1), Option::some(1)->okOr(2));
-        $this->assertEquals(Result::error(2), Option::none()->okOr(2));
+        $this->assertEqualsOk(1, Option::some(1)->okOr(2));
+        $this->assertEqualsError(2, Option::none()->okOr(2));
     }
 
     /**
@@ -31,8 +35,8 @@ final class OptionToResultTest extends TestCase
      */
     public function testOkOrElse()
     {
-        $this->assertEquals(Result::ok(1), Option::some(1)->okOrElse($this->forbidden()));
-        $this->assertEquals(Result::error(2), Option::none()->okOrElse(fn () => 2));
+        $this->assertEqualsOk(1, Option::some(1)->okOrElse($this->forbidden()));
+        $this->assertEqualsError(2, Option::none()->okOrElse(fn () => 2));
     }
 
     private function forbidden(): \Closure

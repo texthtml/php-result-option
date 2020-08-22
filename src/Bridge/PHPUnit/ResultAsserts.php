@@ -22,7 +22,6 @@ trait ResultAsserts
      */
     public static function assertOk(Result $result, string $message = ''): void
     {
-        static::assertThat($result, new IsInstanceOf(Result::class), $message);
         static::assertThat($result, new IsOk(), $message);
     }
 
@@ -34,7 +33,6 @@ trait ResultAsserts
      */
     public static function assertEqualsOk(mixed $expected, Result $result, string $message = ''): void
     {
-        static::assertThat($result, new IsInstanceOf(Result::class), $message);
         static::assertThat($result, new IsOk(), $message);
         static::assertThat($result->unwrap(), new IsEqual($expected), $message);
     }
@@ -47,7 +45,6 @@ trait ResultAsserts
      */
     public static function assertSameOk(mixed $expected, Result $result, string $message = ''): void
     {
-        static::assertThat($result, new IsInstanceOf(Result::class), $message);
         static::assertThat($result, new IsOk(), $message);
         static::assertThat($result->unwrap(), new IsIdentical($expected), $message);
     }
@@ -60,7 +57,6 @@ trait ResultAsserts
      */
     public static function assertError(Result $result, string $message = ''): void
     {
-        static::assertThat($result, new IsInstanceOf(Result::class), $message);
         static::assertThat($result, new IsError(), $message);
     }
 
@@ -72,7 +68,6 @@ trait ResultAsserts
      */
     public static function assertEqualsError(mixed $expected, Result $result, string $message = ''): void
     {
-        static::assertThat($result, new IsInstanceOf(Result::class), $message);
         static::assertThat($result, new IsError(), $message);
         static::assertThat($result->unwrapError(), new IsEqual($expected), $message);
     }
@@ -85,7 +80,6 @@ trait ResultAsserts
      */
     public static function assertSameError(mixed $expected, Result $result, string $message = ''): void
     {
-        static::assertThat($result, new IsInstanceOf(Result::class), $message);
         static::assertThat($result, new IsError(), $message);
         static::assertThat($result->unwrapError(), new IsIdentical($expected), $message);
     }

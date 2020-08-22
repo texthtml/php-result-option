@@ -9,8 +9,8 @@ use th\Option;
 use th\Result;
 
 /**
- * @covers \th\Option
- * @covers \th\Result
+ * @uses \th\Option
+ * @uses \th\Result
  */
 final class TransposeTest extends TestCase
 {

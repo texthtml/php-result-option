@@ -35,8 +35,10 @@ final class Option implements \IteratorAggregate
     public static function none(): Option
     {
         if (!isset(self::$none)) {
+            // @codeCoverageIgnoreStart
             self::$none = new Option(new class () extends \stdClass {
             });
+            // @codeCoverageIgnoreEnd
         }
 
         return self::$none;
