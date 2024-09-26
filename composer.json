@@ -23,7 +23,7 @@
     "require": {},
     "require-dev": {
         "phan/phan": "^3.1",
-        "phpunit/phpunit": "^9.3",
+        "phpunit/phpunit": "^11.0",
         "phpstan/phpstan": "^0.12.37",
         "squizlabs/php_codesniffer": "^3.5"
     }
