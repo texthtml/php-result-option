@@ -1,4 +1,4 @@
-FROM php:8.0.0beta1-cli-alpine
+FROM php:8.3.12-cli-alpine
 
 RUN apk add --virtual .phpize-deps-configure $PHPIZE_DEPS git autoconf g++ libtool make && \
     git clone https://github.com/nikic/php-ast.git /tmp/php-ast && \
