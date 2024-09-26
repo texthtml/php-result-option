@@ -8,4 +8,4 @@ RUN apk add --virtual .phpize-deps-configure $PHPIZE_DEPS git autoconf g++ libto
     apk del .phpize-deps-configure && \
     docker-php-source delete
 
-COPY --from=composer:2.0 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
